@@ -85,4 +85,61 @@ class MyHashmap<K, V> {
             }
         }
     }
+
+    public V get(K key) {
+        if (key == null) return null;
+        
+        int home = hash(key);
+        int i = 0;
+        
+        // using standard quadratic probing formula: (hash + i^2) % capacity
+        while (i < table.length) {
+            int idx = (int) ((home + (long) i * i) % table.length);
+            Entry<K, V> curr = table[idx];
+            
+            if (curr == null) {
+                return null;
+            }
+            
+            if (!curr.deleted && curr.key.equals(key)) {
+                return curr.val;
+            }
+            
+            i++;
+        }
+        
+        return null; 
+    }
+
+    public boolean search(K key) {
+        return get(key) != null;
+    }
+
+    public V delete(K key) {
+        if (key == null) return null;
+        
+        int home = hash(key);
+        int i = 0;
+        
+        // using standard quadratic probing formula: (hash + i^2) % capacity
+        while (i < table.length) {
+            int idx = (int) ((home + (long) i * i) % table.length);
+            Entry<K, V> curr = table[idx];
+            
+            if (curr == null) {
+                return null;
+            }
+            
+            // lazy deletion: mark as deleted instead of clearing
+            if (!curr.deleted && curr.key.equals(key)) {
+                curr.deleted = true;
+                size--;
+                return curr.val;
+            }
+            
+            i++;
+        }
+        
+        return null;
+    }
 }
