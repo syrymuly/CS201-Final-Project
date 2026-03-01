@@ -1,42 +1,46 @@
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-class MyBST {
-    private PeopleRecord root;
+class MyBST<T> {
+    private class Node {
+        T data;
+        Node left;
+        Node right;
 
-    public MyBST() {
+        Node(T data) {
+            this.data = data;
+            this.left = null;
+            this.right = null;
+        }
+    }
+
+    private Node root;
+    private Comparator<T> comp;
+
+    public MyBST(Comparator<T> comp) {
         this.root = null;
+        this.comp = comp;
     }
 
     // insert adds a node into the tree
-    public void insert(PeopleRecord newRecord) {
-        root = insertRec(root, newRecord);
+    public void insert(T newData) {
+        root = insertRec(root, newData);
     }
 
-    private PeopleRecord insertRec(PeopleRecord current, PeopleRecord newRecord) {
+    private Node insertRec(Node current, T newData) {
         if (current == null) {
-            return newRecord;
+            return new Node(newData);
         }
 
-        // compare based on the family name first then the given name
-        int cmpFamily = newRecord.getFamilyName().compareToIgnoreCase(current.getFamilyName());
-
-        if (cmpFamily < 0) {
-            current.left = insertRec(current.left, newRecord);
-        } 
-        else if (cmpFamily > 0) {
-            current.right = insertRec(current.right, newRecord);
-        } 
-        else {
-            // family names are the same - compare given names
-            int cmpGiven = newRecord.getGivenName().compareToIgnoreCase(current.getGivenName());
-            if (cmpGiven <= 0) {
-                // if even the full name is the same - just place it on the left
-                current.left = insertRec(current.left, newRecord);
-            } 
-            else {
-                current.right = insertRec(current.right, newRecord);
-            }
+        int cmp = comp.compare(newData, current.data);
+        if (cmp < 0) {
+            current.left = insertRec(current.left, newData);
+        } else if (cmp > 0) {
+            current.right = insertRec(current.right, newData);
+        } else {
+            // equal based on comparator, arbitrarily place it on the left
+            current.left = insertRec(current.left, newData);
         }
         return current;
     }
@@ -48,60 +52,84 @@ class MyBST {
         return "Total nodes: " + count + ", Tree height: " + height;
     }
 
-    private int countNodes(PeopleRecord node) {
+    private int countNodes(Node node) {
         if (node == null) {
             return 0;
-        }
-        else {
+        } else {
             return 1 + countNodes(node.left) + countNodes(node.right);
         }
     }
 
-    private int calculateHeight(PeopleRecord node) {
+    private int calculateHeight(Node node) {
         if (node == null) {
             return 0;
-        }
-        else {
+        } else {
             return 1 + Math.max(calculateHeight(node.left), calculateHeight(node.right));
         }
     }
 
-    // search() takes given name and family name as parameters, and returns all nodes / records that have the same names
-    public List<PeopleRecord> search(String givenName, String familyName) {
-        List<PeopleRecord> results = new ArrayList<>();
-        searchRec(root, givenName, familyName, results);
+    // search() returns all nodes/records that match the target using the tree's comparator
+    public List<T> search(T target) {
+        List<T> results = new ArrayList<>();
+        searchRec(root, target, results);
         return results;
     }
 
-    private void searchRec(PeopleRecord node, String givenName, String familyName, List<PeopleRecord> results) {
+    private void searchRec(Node node, T target, List<T> results) {
         if (node == null) {
             return;
         }
 
-        int cmpFamily = familyName.compareToIgnoreCase(node.getFamilyName());
+        int cmp = comp.compare(target, node.data);
+        if (cmp < 0) {
+            searchRec(node.left, target, results);
+        } else if (cmp > 0) {
+            searchRec(node.right, target, results);
+        } else {
+            // exact match is found - add it to results
+            results.add(node.data);
+            // still need to search the left subtree because duplicates (<= 0) go to the left
+            searchRec(node.left, target, results);
+        }
+    }
 
-        if (cmpFamily < 0) {
-            searchRec(node.left, givenName, familyName, results);
-        } 
-        else if (cmpFamily > 0) {
-            searchRec(node.right, givenName, familyName, results);
-        } 
-        else {
-            // family name matches, now check the given name
-            int cmpGiven = givenName.compareToIgnoreCase(node.getGivenName());
+    public void getAllNodes(List<T> list) {
+        getAllNodesRec(root, list);
+    }
 
-            if (cmpGiven == 0) {
-                // exact match is found - add it to results
-                results.add(node);
-                // still need to search the left subtree because duplicates (<= 0)
-                // go to the left in our insert logic
-                searchRec(node.left, givenName, familyName, results);
+    private void getAllNodesRec(Node node, List<T> list) {
+        if (node == null) {
+            return;
+        }
+        getAllNodesRec(node.left, list);
+        list.add(node.data);
+        getAllNodesRec(node.right, list);
+    }
+
+    // Visualization of the tree structure
+    public void printConsole() {
+        System.out.println("BST Structure:");
+        if (root == null) {
+            System.out.println("[- empty -]");
+        } else {
+            printConsoleRec(root, "", true);
+        }
+    }
+
+    private void printConsoleRec(Node node, String prefix, boolean isTail) {
+        if (node != null) {
+            System.out.println(prefix + (isTail ? "\\-- " : "|-- ") + node.data.toString());
+            List<Node> children = new ArrayList<>();
+            if (node.left != null)
+                children.add(node.left);
+            if (node.right != null)
+                children.add(node.right);
+
+            for (int i = 0; i < children.size() - 1; i++) {
+                printConsoleRec(children.get(i), prefix + (isTail ? "    " : "|   "), false);
             }
-            else if (cmpGiven < 0) {
-                searchRec(node.left, givenName, familyName, results);
-            } 
-            else {
-                searchRec(node.right, givenName, familyName, results);
+            if (children.size() > 0) {
+                printConsoleRec(children.get(children.size() - 1), prefix + (isTail ? "    " : "|   "), true);
             }
         }
     }
