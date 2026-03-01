@@ -1,4 +1,5 @@
-// generic hashmap using quadratic probing
+// generic hashmap using quadratic probing for collision resolution.
+// Quadratic probing formula (home + i^2) mod capacity and the overall open-addressingapproach are standard; see e.g. "Introduction toAlgorithms" (CLRS)
 class MyHashmap<K, V> {
     
     private Entry<K, V>[] table;

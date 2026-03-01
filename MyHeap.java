@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.Comparator;
 
-// generic array-based min heap
+// Array-based min-heap. Index-to-parent/child relationships (e.g. parent at (i-1)/2, children at 2*i+1 and 2*i+2), bubble-up on insert, and sink-down on remove follow standard heap algorithms (e.g. "Introduction toAlgorithms" (CLRS))
 class MyHeap<T> {
     
     private ArrayList<T> arr;
