@@ -61,7 +61,6 @@ public class DatabaseProcessing {
             });
             
             // grab all records from the tree using standard in-order traversal
-            @SuppressWarnings("unchecked")
             List<PeopleRecord> records = bst.getAllRecords();
             for (PeopleRecord pr : records) {
                 heap.insert(pr);
