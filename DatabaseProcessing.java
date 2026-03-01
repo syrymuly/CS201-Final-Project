@@ -1,16 +1,26 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.lang.reflect.Field;
+import java.util.Map;
 
 public class DatabaseProcessing {
-    private MyBST bst;
+    private MyBST<PeopleRecord> bst;
 
     public DatabaseProcessing() {
-        this.bst = new MyBST();
+        // generic instantiation using custom comparator to match previous search/insert behavior
+        this.bst = new MyBST<>(new Comparator<PeopleRecord>() {
+            public int compare(PeopleRecord r1, PeopleRecord r2) {
+                int cmp = r1.getFamilyName().compareToIgnoreCase(r2.getFamilyName());
+                if (cmp == 0) {
+                    return r1.getGivenName().compareToIgnoreCase(r2.getGivenName());
+                }
+                return cmp;
+            }
+        });
     }
 
     // loadData: takes a file name and loads all data/records into an instance of MyBST
@@ -33,18 +43,16 @@ public class DatabaseProcessing {
 
     // search: takes given name and family name, uses MyBST search and returns all records that match the names
     public List<PeopleRecord> search(String givenName, String familyName) {
-        return bst.search(givenName, familyName);
+        // create a dummy record formatted to populate givenName and familyName identically
+        String dummyLine = givenName + ";" + familyName + ";;;;;;;;;;;";
+        PeopleRecord target = new PeopleRecord(dummyLine);
+        return bst.search(target);
     }
 
     // sort: extract from bst, load to heap, and return sorted arraylist
     public List<PeopleRecord> sort() {
         List<PeopleRecord> sortedList = new ArrayList<>();
         try {
-            // using reflection to grab the private root since mybst doesnt have a getter
-            Field rootField = MyBST.class.getDeclaredField("root");
-            rootField.setAccessible(true);
-            PeopleRecord root = (PeopleRecord) rootField.get(this.bst);
-            
             // standard min-heap using custom comparator for given name
             MyHeap<PeopleRecord> heap = new MyHeap<>(new Comparator<PeopleRecord>() {
                 public int compare(PeopleRecord r1, PeopleRecord r2) {
@@ -52,8 +60,11 @@ public class DatabaseProcessing {
                 }
             });
             
-            // extract records to heap
-            extractToHeap(root, heap);
+            // grab all records from the tree using standard in-order traversal
+            List<PeopleRecord> records = bst.getAllRecords();
+            for (PeopleRecord pr : records) {
+                heap.insert(pr);
+            }
             
             // using standard heap sort concept: pop min continuously
             while (true) {
@@ -69,18 +80,10 @@ public class DatabaseProcessing {
         return sortedList;
     }
 
-    // recursive helper to pull everything from the bst
-    private void extractToHeap(PeopleRecord node, MyHeap<PeopleRecord> heap) {
-        if (node == null) return;
-        heap.insert(node);
-        // since left/right are package-private in PeopleRecord, we can access them directly
-        extractToHeap(node.left, heap);
-        extractToHeap(node.right, heap);
-    }
-
     // getMostFrequentWords: read people.txt and get most frequent words in specific fields
-    public void getMostFrequentWords(int count, int len) throws ShortLengthException {
+    public List<Map.Entry<String, Integer>> getMostFrequentWords(int count, int len) throws ShortLengthException {
         if (len < 3) {
+            System.err.println("error: word length cannot be less than 3");
             throw new ShortLengthException("word length cannot be less than 3");
         }
         
@@ -121,7 +124,11 @@ public class DatabaseProcessing {
         MyHeap<String> maxHeap = new MyHeap<>(new Comparator<String>() {
             public int compare(String a, String b) {
                 // reverse order to create a max-heap
-                return map.get(b) - map.get(a);
+                int cmp = map.get(b) - map.get(a);
+                if (cmp == 0) {
+                    return a.compareToIgnoreCase(b); // alphabetical tie fallback
+                }
+                return cmp;
             }
         });
         
@@ -129,17 +136,18 @@ public class DatabaseProcessing {
             maxHeap.insert(w);
         }
         
-        System.out.println("\ntop " + count + " words (length >= " + len + "):");
+        List<Map.Entry<String, Integer>> results = new ArrayList<>();
         int printed = 0;
         while (printed < count) {
             try {
                 String topWord = maxHeap.remove();
-                System.out.println(topWord + " : " + map.get(topWord));
+                results.add(new AbstractMap.SimpleEntry<>(topWord, map.get(topWord)));
                 printed++;
             } catch (IllegalStateException e) {
                 break; // heap is empty
             }
         }
+        return results;
     }
 
     public static void main(String[] args) {
@@ -173,7 +181,11 @@ public class DatabaseProcessing {
         // 4. test getMostFrequentWords
         System.out.println("\n--- testing getMostFrequentWords ---");
         try {
-            db.getMostFrequentWords(10, 5); // top 10 words, len >= 5
+            List<Map.Entry<String, Integer>> topWords = db.getMostFrequentWords(10, 5); // top 10 words, len >= 5
+            System.out.println("top 10 words (length >= 5):");
+            for (Map.Entry<String, Integer> entry : topWords) {
+                System.out.println(entry.getKey() + " : " + entry.getValue());
+            }
         } catch (ShortLengthException e) {
             e.printStackTrace();
         }
