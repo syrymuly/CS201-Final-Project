@@ -8,19 +8,10 @@ import java.util.List;
 import java.util.Map;
 
 public class DatabaseProcessing {
-    private MyBST<PeopleRecord> bst;
+    private MyBST bst;
 
     public DatabaseProcessing() {
-        // generic instantiation using custom comparator to match previous search/insert behavior
-        this.bst = new MyBST<>(new Comparator<PeopleRecord>() {
-            public int compare(PeopleRecord r1, PeopleRecord r2) {
-                int cmp = r1.getFamilyName().compareToIgnoreCase(r2.getFamilyName());
-                if (cmp == 0) {
-                    return r1.getGivenName().compareToIgnoreCase(r2.getGivenName());
-                }
-                return cmp;
-            }
-        });
+        this.bst = new MyBST();
     }
 
     // loadData: takes a file name and loads all data/records into an instance of MyBST
@@ -43,10 +34,7 @@ public class DatabaseProcessing {
 
     // search: takes given name and family name, uses MyBST search and returns all records that match the names
     public List<PeopleRecord> search(String givenName, String familyName) {
-        // create a dummy record formatted to populate givenName and familyName identically
-        String dummyLine = givenName + ";" + familyName + ";;;;;;;;;;;";
-        PeopleRecord target = new PeopleRecord(dummyLine);
-        return bst.search(target);
+        return bst.search(givenName, familyName);
     }
 
     // sort: extract from bst, load to heap, and return sorted arraylist
@@ -125,11 +113,7 @@ public class DatabaseProcessing {
         MyHeap<String> maxHeap = new MyHeap<>(new Comparator<String>() {
             public int compare(String a, String b) {
                 // reverse order to create a max-heap
-                int cmp = map.get(b) - map.get(a);
-                if (cmp == 0) {
-                    return a.compareToIgnoreCase(b); // alphabetical tie fallback
-                }
-                return cmp;
+                return map.get(b) - map.get(a);
             }
         });
         
