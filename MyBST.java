@@ -93,8 +93,10 @@ class MyBST<T> {
         }
     }
 
-    public void getAllNodes(List<T> list) {
+    public List<T> getAllRecords() {
+        List<T> list = new ArrayList<>();
         getAllNodesRec(root, list);
+        return list;
     }
 
     private void getAllNodesRec(Node node, List<T> list) {
